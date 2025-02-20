@@ -32,7 +32,7 @@ sambamba-0.6.8 view -h -t 2 -f bam -F "[XS] == null and not unmapped and not dup
   ${samp_name}_filtered_sorted.bam > \
   ${samp_name}_filtered_sorted_unique.bam
 
-#Removing duplicated reads
+#Removing duplicate reads
 java -jar picard.jar MarkDuplicates I=${samp_name}_filtered_sorted_unique.bam \
   O=${samp_name}_filtered_noDUP_unique.bam REMOVE_DUPLICATES=true \
   METRICS_FILE=${samp_name}_filtered_noDUP.txt
