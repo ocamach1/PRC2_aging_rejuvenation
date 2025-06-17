@@ -2,7 +2,7 @@
 # - samtools
 # - sicer2
 
-# Sicer2 requires obtention of bed files for both IP (DNA bound to the target of interest) and Input (total chromatin DNA that serves as background control) samples. 
+# Sicer2 requires bed files for both IP (DNA bound to the target of interest) and Input (total chromatin DNA that serves as background control) samples. 
 # bed files are obtained from the previously processed bam files containing reads uniquely aligned to the mouse genome.
 # Sorting processed bam files by read name
 samtools sort -n -o ${samp_name}_filtered_mouse_reads_final_nsorted.bam ${samp_name}_filtered_mouse_reads_final.bam
