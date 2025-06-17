@@ -12,7 +12,7 @@ R1_fastq="Raw fastq file with read 1"
 R2_fastq="Raw fastq file with read 2"
 samp_name="Sample name"
 
-# Trimming adapter sequences with Trim Galore
+# Trimming adapter sequences with Trim Galore from the raw fastq files
 trim_galore --paired $R1_fastq $R2_fastq
 
 prefix_R1="$(echo $R1_fastq | cut -d '.' -f1)"
