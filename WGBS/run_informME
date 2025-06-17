@@ -14,9 +14,9 @@ fastaToCpg.sh "$reference_genome_fasta_file"
 # 'trim' indicates the number of base pairs that should be trimmed according to the M-bias plot generated during the alignment and processing of WGBS fastq files (see align_process_WGBS.sh).
 #     Only 5' trimming can be included in the informME pipeline and it is expressed as a vector ['# bases trimmed at 5' of read 1', '# bases trimmed at 5' of read2']
 #     The number of bases trimmed in 5' of reads 1 and 2 for all WGBS samples included in the study is indicated in Table EV1 in the article.
-# 'MAT_file' is the name of the WGBS BAM file sorted by coordinates, obtained from align_process_WGBS.sh.
+# 'BAM_file' is the name of the WGBS BAM file sorted by coordinates, obtained from align_process_WGBS.sh.
 # 'chr_number' is the chromosome number. The function should be ran for each chromosome.
-getMatrices.sh -c 1 -t "$trim" "$MAT_file" "$chr_number"
+getMatrices.sh -c 1 -t "$trim" "$BAM_file" "$chr_number"
 
 
 # 3) Model estimation and analysis:
