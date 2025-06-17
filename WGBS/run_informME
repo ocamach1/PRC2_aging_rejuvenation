@@ -1,1 +1,41 @@
+# informME v0.3.3 was used. Installation and details on using the software are available in https://github.com/GarrettJenkinson/informME.
+
+
+# Running the informME pipeline consists of 3 commands:
+
+# 1) Reference genome analysis:
+# This step analyzes the reference genome FASTA_FILE (in FASTA format) and produces a MATLAB MAT file CpGlocationChr#.mat for each chromosome.
+# FASTA file used represented the mm10 genome (Genome assembly version: GRCm38.p6. GENCODE release: M23).
+fastaToCpg.sh "$reference_genome_fasta_file"
+
+
+# 2) Methylation data matrix generation:
+# This step takes the BAM file BAM_FILE as input and generates the methylation data matrix for chromosome number CHR_NUM. 
+# 'trim' indicates the number of base pairs that should be trimmed according to the M-bias plot generated during the alignment and processing of WGBS fastq files (see align_process_WGBS.sh).
+#     Only 5' trimming can be included in the informME pipeline and it is expressed as a vector ['# bases trimmed at 5' of read 1', '# bases trimmed at 5' of read2']
+#     The number of bases trimmed in 5' of reads 1 and 2 for all WGBS samples included in the study is indicated in Table EV1 in the article.
+# 'MAT_file' is the name of the WGBS BAM file sorted by coordinates, obtained from align_process_WGBS.sh.
+# 'chr_number' is the chromosome number. The function should be ran for each chromosome.
+getMatrices.sh -c 1 -t "$trim" "$MAT_file" "$chr_number"
+
+
+# 3) Model estimation and analysis:
+# This step is comprised of two phases. During the first phase, informME learns the parameters of the Ising probability distribution by combining the methylation
+# data matrices provided through the argument MAT_FILES (comma-separated list) for chromosome number CHR_NUM. 
+# The second phase of this step consists in analyzing the model learned by computing a number of statistical summaries of the methylation state, including
+# probability distributions of methylation levels, mean methylation levels, and normalized methylation entropies, as well as mean and entropy based classifications. 
+# 'MAT_file' is the name of the WGBS BAM file sorted by coordinates, obtained from align_process_WGBS.sh.
+# 'sample_name' is the desired sample name and the prefix for the resulting output files
+# 'chr_number' is the chromosome number. The function should be ran for each chromosome.
+informME_run.sh "$MAT_file" "$sample_name" "$chr_number"
+
+
+# 4.1) Generated BED files for single analysis:
+# This function makes BED files (with MML and NME information) from the methylation analysis results obtained after running informME_run.sh for a given sample.
+singleMethAnalysisToBed.sh "$sample_name"
+
+# 4.2) Generated BED files for differential analysis:
+# This function makes BED files (with dMML, dNME and JSD information) for the differential methylation analysis results obtained after running informME_run.sh
+# for two given treatment and control samples.
+diffMethAnalysisToBed.sh "$sample_name1" "$sample_name2"
 
