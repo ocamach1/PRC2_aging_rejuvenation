@@ -1,7 +1,8 @@
-module load trimgalore
-module load samtools
-module load fastqc
-module load bowtie
+# Required packages:
+# - trimgalore
+# - samtools
+# - fastqc
+# - bowtie
 
 R1_fastq="Raw fastq file with read 1"
 R2_fastq="Raw fastq file with read 2"
