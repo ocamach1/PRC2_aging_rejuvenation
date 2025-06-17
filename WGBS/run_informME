@@ -1,7 +1,7 @@
 # informME v0.3.3 was used. Installation and details on using the software are available in https://github.com/GarrettJenkinson/informME.
 
 
-# Running the informME pipeline consists of 3 commands:
+# Running the informME pipeline consists of 4 steps:
 
 # 1) Reference genome analysis:
 # This step analyzes the reference genome FASTA_FILE (in FASTA format) and produces a MATLAB MAT file CpGlocationChr#.mat for each chromosome.
