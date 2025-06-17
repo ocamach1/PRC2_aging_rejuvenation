@@ -28,7 +28,7 @@ bowtie2  --very-sensitive --end-to-end --no-mixed --no-discordant --phred33 -I 1
 # Filtering reads from SAM file with mapping quality > 10
 samtools view -h -F 4 -q 10 -bS ${samp_name}.sam > ${samp_name}_filtered.bam
 
-# Sorting filtered BAM file
+# Sorting filtered BAM file by coordinates
 java -jar picard.jar SortSam -I ${samp_name}_filtered.bam \
   -O ${samp_name}_filtered_sorted.bam -SORT_ORDER coordinate
 
