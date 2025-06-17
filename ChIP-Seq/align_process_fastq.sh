@@ -1,14 +1,18 @@
 # Required packages:
-# - trimgalore
-# - samtools
-# - fastqc
-# - bowtie
+# - Trim Galore
+# - Fastqc
+# - Bowtie2
+# - Samtools
+# - BEDtools
+# - Sambamba
+# - deepTools
+
 
 R1_fastq="Raw fastq file with read 1"
 R2_fastq="Raw fastq file with read 2"
 samp_name="Sample name"
 
-# Trimming adapter sequences with Trim Galore!
+# Trimming adapter sequences with Trim Galore
 trim_galore --paired $R1_fastq $R2_fastq
 
 prefix_R1="$(echo $R1_fastq | cut -d '.' -f1)"
