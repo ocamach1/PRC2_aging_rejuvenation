@@ -5,8 +5,8 @@ This repository contains code used in the analysis of the data presented in our 
 It includes scripts to:
 - **Analyze WGBS data:**
   - Align and process WGBS data from raw fastq files.
-  - Run informME pipeline: compute mean methylation level (MML), normalized entropy level (NME) for each WGBS sample, and Jensen-Shannon distance (JSD) between pairs of samples
-  - Rank epigenetically discordant genes in a given comparison of 2 WGBS samples based on JSD.
+  - Run informME pipeline: compute mean methylation level (MML), normalized entropy level (NME) for each WGBS sample, and Jensen-Shannon distance (JSD) between pairs of samples.
+  - Rank epigenetically discordant genes when comparing samples under 2 conditions (i.e. old vs young) based on JSD.
     
 - **Analyze ChIP-Seq data:**
   - Align and process ChIP-Seq data from raw fastq files.
