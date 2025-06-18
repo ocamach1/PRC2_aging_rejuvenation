@@ -1,4 +1,4 @@
-# This is an R function that ranks all Mouse genes in the Bioconductor library TxDb.Mmusculus.UCSC.mm10.refGene using 
+# This is an R function that ranks all Mouse genes in the Bioconductor library TxDb.Mmusculus.UCSC.mm10.knownGene using 
 # Jensen-Shannon distance (JSD) and the average mutual information based on the method described in https://doi.org/10.1186/s12859-019-2777-6. 
 # It should be run within an R session.
 
@@ -20,14 +20,30 @@
 
 ####################################################################
 # 1) Old vs Young comparison of whole dorsal skin samples:
+# Source code
+source('JSD_ranking_source_code.R')
 
+# Directories
+inFolder <- 'skin_bw_files/'
+outFolder <- 'results/'
 
+# Comparisons among control samples (to make null distribution)
+refVrefFiles <-  c("JSD-Y4F-1-VS-Y4F-3.bw",
+                   "JSD-Y4F-1-VS-Y4F-4.bw",
+		   "JSD-Y4F-3-VS-Y4F-4.bw")
 
+# Comparisons between treated and control samples
+testVrefFiles <- c("JSD-5760-con-VS-Y4F-4.bw",
+		   "JSD-5761-con-VS-Y4F-4.bw",
+		   "JSD-5762-con-VS-Y4F-4.bw",
+		   "JSD-5764-con-VS-Y4F-4.bw")
+            
+#Name of the groups
+tName="old"
+rName="young"
 
-
-
-
-
+# Function
+rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
 ####################################################################
 
 ####################################################################
@@ -65,9 +81,38 @@ rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
 ####################################################################
 # 3) Old vs Young comparison of isolated epidermis from tail skin samples:
 
+# Source code
+source('JSD_ranking_source_code.R')
+# Directories
+inFolder <- 'skin_bw_files/'
+outFolder <- 'results/'
 
+# Comparisons among control samples (to make null distribution)
+refVrefFiles <-  c("JSD-Y-458-VS-Y-459.bw",
+		   "JSD-Y-458-VS-Y-461.bw",
+		   "JSD-Y-458-VS-Y-463.bw",
+		   "JSD-Y-458-VS-Y-464.bw",
+		   "JSD-Y-459-VS-Y-461.bw",
+		   "JSD-Y-459-VS-Y-463.bw",
+		   "JSD-Y-459-VS-Y-464.bw",
+		   "JSD-Y-461-VS-Y-463.bw",
+		   "JSD-Y-461-VS-Y-464.bw",
+		   "JSD-Y-463-VS-Y-464.bw")
 
+# Comparisons between treated and control samples
+testVrefFiles <- c("JSD-O-005-VS-Y-458.bw",
+		   "JSD-O-989-VS-Y-458.bw",
+                   "JSD-O-990-VS-Y-458.bw",
+                   "JSD-O-991-VS-Y-458.bw",
+                   "JSD-O-992-VS-Y-458.bw")
+
+            
+# Name of the groups
+tName="old"
+rName="young"
+
+# Function
+rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
 ####################################################################
-Add some comment in previous informME.
 
 
