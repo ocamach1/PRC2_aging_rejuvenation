@@ -21,40 +21,6 @@
 ####################################################################
 # 1) Old vs Young comparison of whole dorsal skin samples:
 
-# Source code
-source('jsGrank_mm10_refGene.R')
-# Directories
-inFolder <- '/dcs04/legacy-dcs01-feinberglab/ocamacho/skin_bw_files'
-outFolder <- '/dcs04/rumen/data/personal/ocamacho/post_informME/2025_analyses/jsGrank/jsGrank_all-vs-5761/results/gene_level/'
-
-# With replicates for reference samples (we get a pvalue)
-
-# Comparisons with refrrence samples
-# Comparisons with refrrence samples
-refVrefFiles <-  c("JSD-5760-con-VS-5761-con.bw",
-                   "JSD-5760-con-VS-5762-con.bw",
-		   "JSD-5760-con-VS-5764-con.bw",
-                   "JSD-5761-con-VS-5762-con.bw",
-                   "JSD-5761-con-VS-5764-con.bw",
-                   "JSD-5762-con-VS-5764-con.bw")
-
-# We miss 5760-vs-5764, 5761-vs-5764 from old data
-
-
-# Comparisons between treated and control samples
-testVrefFiles <- c("JSD-253-dox-VS-5761-con.bw",
-                   "JSD-284-dox-VS-5761-con.bw",
-                   "JSD-285-dox-VS-5761-con.bw",
-                   "JSD-288-dox-VS-5761-con.bw",
-                   "JSD-904-dox-VS-5761-con.bw")
-            
-#Name of the groups
-tName="dox"
-rName="old"
-
-# Function
-rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
-
 
 
 
@@ -64,17 +30,44 @@ rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
 
 ####################################################################
 
-# 2) Old vs Old treated (OSKM) comparison of whole dorsal skin samples
+####################################################################
+# 2) Old vs Old treated (OSKM) comparison of whole dorsal skin samples:
+
+# Source code
+source('JSD_ranking_source_code.R')
+# Directories
+inFolder <- 'skin_bw_files/'
+outFolder <- 'results/'
+
+# Comparisons among control samples (to make null distribution)
+refVrefFiles <-  c("JSD-5760-con-VS-5761-con.bw",
+                   "JSD-5760-con-VS-5762-con.bw",
+		   "JSD-5760-con-VS-5764-con.bw",
+                   "JSD-5761-con-VS-5762-con.bw",
+                   "JSD-5761-con-VS-5764-con.bw",
+                   "JSD-5762-con-VS-5764-con.bw")
+
+# Comparisons between treated and control samples
+testVrefFiles <- c("JSD-253-dox-VS-5761-con.bw",
+                   "JSD-284-dox-VS-5761-con.bw",
+                   "JSD-285-dox-VS-5761-con.bw",
+                   "JSD-288-dox-VS-5761-con.bw",
+                   "JSD-904-dox-VS-5761-con.bw")
+            
+# Name of the groups
+tName="old_treated"
+rName="old"
+
+# Function
+rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,tName,rName)
+####################################################################
+
+####################################################################
+# 3) Old vs Young comparison of isolated epidermis from tail skin samples:
 
 
 
-
-
-# 3) Old vs Young comparison of isolated epidermis from tail skin samples
-
-
-
-
+####################################################################
 Add some comment in previous informME.
 
 
