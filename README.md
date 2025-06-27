@@ -12,3 +12,7 @@ It includes scripts to:
   - Align and process ChIP-Seq data from raw fastq files.
   - Perform peak calling with Sicer2.
   - Perform differential binding analysis with DiffBind.
+
+- **Analyze RNA-Seq data:**
+  - Align and process RNA-Seq data from raw fastq files.
+  - Perform differential expression analysis with DESeq2.
