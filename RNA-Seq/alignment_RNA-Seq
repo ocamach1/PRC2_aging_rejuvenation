@@ -1,0 +1,13 @@
+# Required packages:
+# - Salmon
+
+R1_fastq="Raw fastq file with read 1"
+R2_fastq="Raw fastq file with read 2"
+samp_name="Sample name"
+
+# Alignment of reads against mouse (mm10) reference transcriptome using Salmon. 
+salmon quant -i mm10_transcriptome -l A \
+         -1 ${R1_fastq} \
+         -2 ${R2_fastq} \
+         --validateMappings -o ${samp_name}_quants --gcBias
+done
