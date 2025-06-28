@@ -5,7 +5,6 @@ library(DecompPipeline)
 # Importing the data.
 # Upload data specifying the sample annotation file ("skin_aging_sample_annotation.tsv") as input, which contains the bedmethyl 
 # (Bismark cov) files and the corresponding sample names included in the analysis. In this analysis, the content of the annotation file is:
-
 #sampleID,filename
 #Y4F-1,Y4F-1.bismark.cov
 #Y4F-3,Y4F-3.bismark.cov
@@ -19,16 +18,6 @@ library(DecompPipeline)
 #285-dox,285-dox.bismark.cov
 #288-dox,288-dox.bismark.cov
 #904-dox,904-dox.bismark.cov
-#O-005,O-005.bismark.cov
-#O-989,O-989.bismark.cov
-#O-990,O-990.bismark.cov
-#O-991,O-991.bismark.cov
-#O-992,O-992.bismark.cov
-#Y-458,Y-458.bismark.cov
-#Y-459,Y-459.bismark.cov
-#Y-461,Y-461.bismark.cov
-#Y-463,Y-463.bismark.cov
-#Y-464,Y-464.bismark.cov
 
 rnb.options(
   assembly = "mm10",
