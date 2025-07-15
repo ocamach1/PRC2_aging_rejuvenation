@@ -1,120 +1,3 @@
-#
-# informME: An information-theoretic pipeline for WGBS data
-# Copyright (C) 2017, Garrett Jenkinson (jenkinson@jhu.edu)
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-# or see <http://www.gnu.org/licenses/>.
-#
-#########################################################################
-#
-# This is an R script that ranks all Human genes in the
-# Bioconductor library TxDb.Mmusculus.UCSC.mm10.knownGene using
-# the Jensen-Shannon distance (JSD) based on the method described
-# in [1]. It should be run within an R session.
-#
-#  usage (replicate reference data is available):
-#
-#   setwd("path/to/informME/PostProcess/")
-#   source("jsGrank.R")
-#   rankGenes(refVrefFiles,testVrefFiles,inFolder,outFolder,
-#             tName,rName)
-#
-#   # refVrefFiles is a vector of BED files that contain the
-#   # JSD values of a test/reference comparison.
-#   # For example: if
-#   #
-#   # JSD-lungnormal-1-VS-lungnormal-2.bed
-#   # JSD-lungcancer-3-VS-lungnormal-1.bed
-#   # JSD-lungnormal-3-VS-lungnormal-2.bed
-#   #
-#   # are available, then set
-#   #
-#   # textVrefFiles <- c("JSD-lungnormal-1-VS-lungnormal-2.bed",
-#   #                    "JSD-lungnormal-3-VS-lungnormal-1.bed",
-#   #                    "JSD-lungnormal-3-VS-lungnormal-2.bed")
-#   #
-#   # testVrefFiles is a vector of BED files that contain the
-#   # JSD values of available test/reference comparisons.
-#   # For example: if
-#   #
-#   # JSD-lungcancer-1-VS-lungnormal-1.bed
-#   # JSD-lungcancer-2-VS-lungnormal-2.bed
-#   # JSD-lungcancer-3-VS-lungnormal-3.bed
-#   #
-#   # are available, then set
-#   #
-#   # textVrefFiles <- c("JSD-lungcancer-1-VS-lungnormal-1.bed",
-#   #                    "JSD-lungcancer-2-VS-lungnormal-2.bed",
-#   #                    "JSD-lungcancer-3-VS-lungnormal-3.bed")
-#   #
-#   # inFolder is the directory that contains the JSD files
-#   # outFolder is the directory used to write the result
-#   # (a .xlsx file).
-#   #
-#   # For example:
-#   #
-#   # inFolder  <- "/path/to/in-folder/"
-#   # outFolder <- "/path/to/out-folder/"
-#   #
-#   # tName and rName are strings providing names for the
-#   # test and reference phenotypes.
-#   #
-#   # For example:
-#   #
-#   # tName <- "lungcancer"
-#   # rName <- "lungnormal"
-#
-#  usage (no replicate reference data is available):
-#
-#   setwd("path/to/informME/PostProcess/")
-#   source("jsGrank.R")
-#   rankGenes(c(),testVrefFiles,inFolder,outFolder,
-#             tName,rName)
-#
-#   # testVrefFiles is a vector of BED files that contain the
-#   # JSD values of available test/reference comparisons.
-#   # For example: if
-#   #
-#   # JSD-lungcancer-1-VS-lungnormal-1.bed
-#   # JSD-lungcancer-2-VS-lungnormal-2.bed
-#   # JSD-lungcancer-3-VS-lungnormal-3.bed
-#   #
-#   # are available, then set
-#   #
-#   # textVrefFiles <- c("JSD-lungcancer-1-VS-lungnormal-1.bed",
-#   #                    "JSD-lungcancer-2-VS-lungnormal-2.bed",
-#   #                    "JSD-lungcancer-3-VS-lungnormal-3.bed")
-#   #
-#   # inFolder is the directory that contains the JSD files
-#   # outFolder is the directory used to write the result
-#   # (a .xlsx file).
-#   #
-#   # For example:
-#   #
-#   # inFolder  <- "/path/to/in-folder/"
-#   # outFolder <- "/path/to/out-folder/"
-#   #
-#   # tName and rName are strings providing names for the
-#   # test and reference phenotypes.
-#   #
-#   # For example:
-#   #
-#   # tName <- "lungcancer"
-#   # rName <- "lungnormal"
-#
-#
 # REQUIRED PACKAGES:
 suppressMessages(library(GenomicFeatures))
 suppressMessages(library(GenomicRanges))
@@ -555,7 +438,7 @@ rankBreakTies <- function(firstCol, secCol)
       # No need to break tie
       return_rank[index] <- r
     }
- }
+  }
   # Return ranking
   return(return_rank)
 } # end rankBreakTies function
@@ -608,22 +491,12 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
   bodiesDF <- as.data.frame(bodiesReturnObj$geneRegions)
 
   #combine into a single DF with pVals
-  #mergedDF <- merge(promsDF[,c(grep("gene_id",names(promsDF)),
-  #                  grep("^pVal", names(promsDF) ))],
-  #                  bodiesDF[,c(grep("gene_id",names(bodiesDF)),
-  #                  grep("^pVal", names(bodiesDF) ))],
-  #  by="gene_id",all=TRUE)
-   
- mergedDF <- merge(promsDF[,c(grep("gene_id",names(promsDF)),
-                             grep("^pVal", names(promsDF)),
-                             grep("^normedScore_", names(promsDF)))],
-                  bodiesDF[,c(grep("gene_id",names(bodiesDF)),
-                              grep("^pVal", names(bodiesDF)),
-                              grep("^normedScore_", names(bodiesDF)))],
-                  by="gene_id", all=TRUE)
- 
- 
-  # library(dplyr)
+  mergedDF <- merge(promsDF[,c(grep("gene_id",names(promsDF)),
+                    grep("^pVal", names(promsDF) ))],
+                    bodiesDF[,c(grep("gene_id",names(bodiesDF)),
+                    grep("^pVal", names(bodiesDF) ))],
+                    by="gene_id",all=TRUE)
+    # library(dplyr)
     # mergedDF <- full_join(promsDF[,c(grep("gene_id",names(promsDF)),
     #                       grep("^pVal", names(promsDF) ))],
     #                       bodiesDF[,c(grep("gene_id",names(bodiesDF)),
@@ -815,13 +688,11 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
                     mergedDF$promRanks,
                     mergedDF$pVal_prom_total,
                     mergedDF$BH_qValue_prom,
-		    mergedDF[,c(grep("^pVal_prom_alt.*", names(mergedDF)))],
-		    mergedDF[,c(grep("^normedScore_prom_alt.*", names(mergedDF)))],
+                    mergedDF[,c(grep("^pVal_prom_alt.*",names(mergedDF)))],
                     mergedDF$bodRanks,
                     mergedDF$pVal_bod_total,
                     mergedDF$BH_qValue_bod,
-                    mergedDF[,c(grep("^pVal_bod_alt.*",names(mergedDF)))],
-	            mergedDF[,c(grep("^normedScore_bod_alt.*", names(mergedDF)))]	    
+                    mergedDF[,c(grep("^pVal_bod_alt.*",names(mergedDF)))]
                     )
   colnames(outTable) <- c("Gene",
                           "RANK comp.",
@@ -831,27 +702,17 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
                           "RANK prom.",
                           "p-value prom.",
                           "q-value prom.",
-			  paste("p-value prom. TR",seq(1,length(testVrefFiles)),sep=""),
-			  paste("JSD magnitude prom. TR", seq(1, length(testVrefFiles)), sep=""),
+                          paste("p-value prom. TR",seq(1,length(testVrefFiles)),sep=""),
                           "Rank_body",
                           "p-value body",
                           "q-value body",
-			  paste("p-value body TR",seq(1,length(testVrefFiles)),sep=""),
-			  paste("JSD magnitude body TR", seq(1, length(testVrefFiles)), sep="")
+                          paste("p-value body TR",seq(1,length(testVrefFiles)),sep="")
                           )
   rm(list=c("mergedDF"))
   
   # Remove NAs
   outTable[is.na(outTable)]<-"ND"
-  outTable <- as.data.frame(outTable)
-  if (tName == "dox") {
-  idx1 <- which(as.numeric(outTable$`RANK comp.`) == 4)
-  idx2 <- which(as.numeric(outTable$`RANK comp.`) == 494)
-  tmp <- outTable$Gene[idx1]
-  outTable$Gene[idx1] <- outTable$Gene[idx2]
-  outTable$Gene[idx2] <- tmp
-  }
-
+  
   ###############################################################
   # write results to output
   ###############################################################
