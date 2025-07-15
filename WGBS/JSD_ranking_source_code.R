@@ -850,8 +850,6 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
   tmp <- outTable$Gene[idx1]
   outTable$Gene[idx1] <- outTable$Gene[idx2]
   outTable$Gene[idx2] <- tmp
-  print(idx1)
-  print(idx2)
   }
 
   ###############################################################
