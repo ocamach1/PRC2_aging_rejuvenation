@@ -688,11 +688,13 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
                     mergedDF$promRanks,
                     mergedDF$pVal_prom_total,
                     mergedDF$BH_qValue_prom,
-                    mergedDF[,c(grep("^pVal_prom_alt.*",names(mergedDF)))],
+		    mergedDF[,c(grep("^pVal_prom_alt.*", names(mergedDF)))],
+		    mergedDF[,c(grep("^normedScore_prom_alt.*", names(mergedDF)))],
                     mergedDF$bodRanks,
                     mergedDF$pVal_bod_total,
                     mergedDF$BH_qValue_bod,
-                    mergedDF[,c(grep("^pVal_bod_alt.*",names(mergedDF)))]
+                    mergedDF[,c(grep("^pVal_bod_alt.*",names(mergedDF)))],
+	            mergedDF[,c(grep("^normedScore_bod_alt.*", names(mergedDF)))]	    
                     )
   colnames(outTable) <- c("Gene",
                           "RANK comp.",
@@ -702,12 +704,14 @@ rankGeneBodiesAndProms <- function(refVrefFiles,testVrefFiles,inFolder,outFolder
                           "RANK prom.",
                           "p-value prom.",
                           "q-value prom.",
-                          paste("p-value prom. TR",seq(1,length(testVrefFiles)),sep=""),
+			  paste("p-value prom. TR",seq(1,length(testVrefFiles)),sep=""),
+			  paste("JSD magnitude prom. TR", seq(1, length(testVrefFiles)), sep=""),
                           "Rank_body",
                           "p-value body",
                           "q-value body",
-                          paste("p-value body TR",seq(1,length(testVrefFiles)),sep="")
-                          )
+			  paste("p-value body TR",seq(1,length(testVrefFiles)),sep=""),
+			  paste("JSD magnitude body TR", seq(1, length(testVrefFiles)), sep="")
+               
   rm(list=c("mergedDF"))
   
   # Remove NAs
