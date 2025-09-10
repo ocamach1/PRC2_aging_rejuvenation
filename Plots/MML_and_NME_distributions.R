@@ -92,6 +92,7 @@ MML$phenoname<-factor(MML$phenoname,levels=c("Y-1","Y-2","Y-3","O-1","O-2","O-3"
 ######################
 ######################
 # Plot average MML and NME levels on Ezh2 binding sites in mESC (as defined in available ChIP-Seq data downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM4774490)
+# Boxplots represent the distribution of the average values of MML/NME of each sample
 
 ezh2_peaks<-import("Ezh2_binding_sites_mESC.bed")
 MML$chrom_state = "blank"
@@ -141,6 +142,8 @@ ggsave(p, file="average_MML_average_boxplots_Ezh2.svg", width=5.2, height=9.0,pa
 ######################
 ######################
 # Plot average MML and NME levels on H3K27me3-marked regions in mESC (as defined in available ChIP-Seq data downloaded from https://www.encodeproject.org/experiments/ENCSR000CFN/)
+# Boxplots represent the distribution of the average values of MML/NME of each sample
+
 H3K27me3_peaks<-import("H3K27me3_peaks_mESC.bed")
 MML$chrom_state = "blank"
 olaps <- findOverlaps(H3K27me3_peaks,MML)
