@@ -19,4 +19,4 @@ It includes scripts to:
   - Perform differential expression analysis with DESeq2.
     
 - **Perform over-representation analysis (ORA)**
-- **Plotting**
+- **Plots**
