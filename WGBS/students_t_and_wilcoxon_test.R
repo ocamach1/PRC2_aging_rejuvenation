@@ -10,7 +10,7 @@ library(Matrix)
 
 
 ####################
-# Perform Student's t test
+# Perform Student's t-test
 # Every sample is treated as an independent biological replicate
 ####################
 
