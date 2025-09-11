@@ -88,6 +88,50 @@ MML_12$group="O+OSKM"
 MML = c(MML_1,MML_2,MML_3,MML_4,MML_5,MML_6,MML_7,MML_8,MML_9,MML_10,MML_11,MML_12)
 MML$phenoname<-factor(MML$phenoname,levels=c("Y-1","Y-2","Y-3","O-1","O-2","O-3","O-4","O+OSKM-1","O+OSKM-2","O+OSKM-3","O+OSKM-4","O+OSKM-5"))
 
+#####################
+#####################
+# Plot boxplots with the genome-wide distribution of MML/NME
+# Boxplots inlcude all the MML/NME values across the whole genome for each sample.
+
+p <- ggplot(as.data.frame(MML), aes(x = phenoname, y = MML, fill = group))
+p <- p + 
+  geom_boxplot(notch = FALSE, position = position_dodge(0.8), alpha = 0.35, outlier.shape = NA) +
+  labs(y = "MML", x = "") + ggtitle('') +
+  theme_bw(base_size = 18) +
+  theme(
+    axis.text.x = element_text(size = 19, angle = 60, hjust = 1),  # bigger and inclined sample names
+    axis.text.y = element_text(size = 21),  
+    axis.title.y = element_text(size = 22),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title = element_blank(),
+    legend.position = "none"
+  ) +
+  coord_cartesian(ylim = c(0, 1.07)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+ggsave(p, file="MML_genome-wide_boxplots.svg", width=5.2, height=9.5,path="/plots")
+
+
+#####################
+#####################
+# Plot density plots with the genome-wide distribution of MML/NME
+# Density plots include all the MML/NME values across the whole genome for each sample
+
+# Subset to get a pair of individual samples to compare
+MML = c(MML_1,MML_4)
+MML$phenoname<-factor(MML$phenoname,levels=c("Y-1","O-1"))
+p <- ggplot(as.data.frame(MML), aes(x=MML, fill=phenoname))
+p <- p +
+  geom_density(size=0.6,alpha = 0.2) +
+  theme_classic(base_size = 18) +
+  labs(y="Density",x="MML")+
+  theme(legend.title=element_blank(), legend.position = "top",
+        axis.title.y=element_text(vjust=1),axis.title.x=element_text(vjust=0))+ 
+        scale_fill_manual(values=c("blue","red"))
+        #scale_fill_manual(values=c("#00BE67","red"))
+
+ggsave(p, file="MML_genome-wide_density_plots.svg", width=7.92, height=4.39,path="/plots")
+
 
 ######################
 ######################
@@ -187,10 +231,4 @@ p <- ggplot(df, aes(x = Group, y = Value, fill = Group)) +
   scale_y_continuous(breaks = seq(0.11, 0.15, by = 0.01)) +
   scale_fill_manual(values = manPalette)
 ggsave(p, file="average_MML_average_boxplots_H3K27me3.svg", width=5.2, height=9.0,path="plots/")
-
-
-
-
- 
-
 
