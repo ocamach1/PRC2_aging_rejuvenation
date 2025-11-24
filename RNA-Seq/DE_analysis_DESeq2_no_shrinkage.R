@@ -44,7 +44,6 @@ res$ensembl_gene_id <- ens_ids
 res_df <- as.data.frame(res)
 res_df$ensembl_gene_id <- gsub("\\..*", "", rownames(res_df))
 res_annotated <- merge(res_df, bm_res, by = "ensembl_gene_id", all.x = TRUE)
-res_annotated <- res_annotated[!duplicated(res_annotated$ensembl_gene_id), ]
 res_annotated <- res_annotated[order(res_annotated$padj), ]
 
 write.csv(res_annotated, file='DatasetEV4.csv')
