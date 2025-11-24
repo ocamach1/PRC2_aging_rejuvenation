@@ -39,7 +39,7 @@ res <- res[!is.na(res$padj),]
 # Convert ENSEMBL IDs to gene symbols
 mart <- useEnsembl(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
 ens_ids <- gsub("\\..*", "", rownames(res))
-bm_res <- getBM(attributes = c("ensembl_gene_id", "external_gene_name", "entrezgene_id", "description"),
+bm_res <- getBM(attributes = c("ensembl_gene_id", "external_gene_name"),
                 filters = "ensembl_gene_id",
                 values = ens_ids,
                 mart = mart)
