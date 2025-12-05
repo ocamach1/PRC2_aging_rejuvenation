@@ -14,7 +14,7 @@ samples <- read.csv("peaksets_H3K27me3.csv")
 aging_H3K27me3 <- dba(sampleSheet=samples)
 
 # Creating binding matrix with scores based on read counts for every sample (affinity scores)
-aging_H3K27me3 <- dba.count(aging_H3K27me3, summit=2000)
+aging_H3K27me3 <- dba.count(aging_H3K27me3, summit=FALSE)
 
 # Normalization using spike-in normalization
 aging_H3K27me3 <- dba.normalize(aging_H3K27me3, spikein=TRUE) 
