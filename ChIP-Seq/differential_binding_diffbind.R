@@ -1,12 +1,14 @@
 library("DiffBind")
 library(csaw)
 
+# The same code applies to the differential binding analysis of both H3K27me3 and H3K9me2 histone marks.
+
 # Reading sample sheet with metadata of our samples. See DiffBind documentation to prepare metadata sheet. 
 # Briefly, the metadata sheet contains the paths for:
 # - IP bam file (containing reads uniquely aligned to the mouse genome, derived from the IP sample - DNA bound to the target of interest).
 # - Input bam file (containing reads uniquely aligned to the mouse genome, derived from the Input sample - Total chromatin DNA with no antibody pull-down).
 # - Spike-in bam file (containing reads uniquely aligning to Drosophila genome, derived from the IP sample). 
-# - BED file containing the coordinates of the peaks defined by SICER2.
+# - BED file containing the coordinates of the peaks defined by the peak callers for H3K27me3 and H3K9me2 (SICER2 and EED respectively).
 
 samples <- read.csv("peaksets_H3K27me3.csv")
 
