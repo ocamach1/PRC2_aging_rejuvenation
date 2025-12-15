@@ -1,0 +1,568 @@
+library(GenomicRanges)
+library(GenomicFeatures)
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+library(org.Mm.eg.db)
+library(rtracklayer)
+library(matrixStats)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(ggplot2)
+library(effsize)
+library(tibble)
+library(patchwork)
+
+## =========================
+## 1. Sample lists + sample info
+## =========================
+## assumes MML_1 ... MML_13 and NME_1 ... NME_13 already exist
+
+MML_list <- list(
+  Y_1      = MML_1,
+  Y_2      = MML_3,
+  Y_3      = MML_4,
+  O_1      = MML_5,
+  O_2      = MML_6,
+  O_3      = MML_7,
+  O_4      = MML_8,
+  OOSKM_1  = MML_9,
+  OOSKM_2  = MML_10,
+  OOSKM_3  = MML_11,
+  OOSKM_4  = MML_12,
+  OOSKM_5  = MML_13
+)
+
+NME_list <- list(
+  Y_1      = NME_1,
+  Y_2      = NME_3,
+  Y_3      = NME_4,
+  O_1      = NME_5,
+  O_2      = NME_6,
+  O_3      = NME_7,
+  O_4      = NME_8,
+  OOSKM_1  = NME_9,
+  OOSKM_2  = NME_10,
+  OOSKM_3  = NME_11,
+  OOSKM_4  = NME_12,
+  OOSKM_5  = NME_13
+)
+
+sample_info <- tibble(
+  sample = names(MML_list),
+  group  = c(
+    rep("Y", 3),
+    rep("O", 4),
+    rep("O+OSKM", 5)
+  )
+)
+
+## Make sure genome and column names are set consistently
+MML_list <- lapply(MML_list, function(gr) {
+  genome(gr) <- "mm10"
+  colnames(mcols(gr))[1] <- "MML"
+  gr
+})
+
+NME_list <- lapply(NME_list, function(gr) {
+  genome(gr) <- "mm10"
+  colnames(mcols(gr))[1] <- "NME"
+  gr
+})
+
+## =========================
+## 2. Promoters (TSS ±2 kb, autosomes) + CpG islands
+## =========================
+txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
+
+genes_gr <- genes(txdb)
+genome(genes_gr) <- "mm10"
+
+# promoters around TSS (±2kb)
+prom_gr <- promoters(genes_gr, upstream = 2000, downstream = 2000)
+
+# keep autosomes only
+autosomes <- paste0("chr", 1:19)
+prom_gr   <- keepSeqlevels(prom_gr, autosomes, pruning.mode = "coarse")
+
+# match seqlevels style to bigWigs (e.g. "chr1")
+seqlevelsStyle(prom_gr) <- seqlevelsStyle(MML_1)
+
+## Map EntrezID -> SYMBOL
+entrez_ids <- names(prom_gr)
+sym <- mapIds(
+  org.Mm.eg.db,
+  keys      = entrez_ids,
+  keytype   = "ENTREZID",
+  column    = "SYMBOL",
+  multiVals = "first"
+)
+prom_gr$symbol <- unname(sym[entrez_ids])
+
+# drop promoters with no gene symbol
+prom_gr <- prom_gr[!is.na(prom_gr$symbol)]
+
+# add promoter ID
+prom_gr$prom_id <- seq_len(length(prom_gr))
+
+## --- CpG islands: restrict promoters to CGI portions --- ##
+cpg_islands <- import.bed(
+  "/Users/oscarcamacho/Documents/Feinberg_lab/skin_aging/CpG_islands/CpG_islands_mm10.txt",
+  trackLine = FALSE
+)
+genome(cpg_islands) <- "mm10"
+seqlevelsStyle(cpg_islands) <- seqlevelsStyle(prom_gr)
+cpg_islands <- keepSeqlevels(cpg_islands, autosomes, pruning.mode = "coarse")
+
+ov_cgi <- findOverlaps(prom_gr, cpg_islands, ignore.strand = TRUE)
+
+prom_cgi_gr <- pintersect(
+  prom_gr[queryHits(ov_cgi)],
+  cpg_islands[subjectHits(ov_cgi)],
+  drop.nohit.ranges = TRUE
+)
+
+prom_cgi_gr$prom_id <- prom_gr$prom_id[queryHits(ov_cgi)]
+prom_cgi_gr$symbol  <- prom_gr$symbol[queryHits(ov_cgi)]
+
+prom_meta <- tibble(
+  prom_id = prom_cgi_gr$prom_id,
+  symbol  = prom_cgi_gr$symbol
+) %>%
+  distinct()
+
+## =========================
+## 3. H3K27me3 promoter classes from ChIP
+## =========================
+ChIP_FALSE_promoters <- read.csv(
+  "/Users/oscarcamacho/Documents/Feinberg_lab/ChIP_aging_epidermis/overlaps/overlaps/overlaps/overlaps_with_H3K27_me3/definitive_lists/2025_annotations/sicer2_summit_FALSE_filter0_spikein_norm_annotations_whole_coords_closest_promoter_2000_txdb.csv"
+)
+
+prom_peak_df <- ChIP_FALSE_promoters %>%
+  mutate(
+    is_loss          = (Fold < 0 & FDR < 0.01),
+    is_gain          = (Fold > 0 & FDR < 0.01),
+    has_H3K27me3_any = TRUE
+  ) %>%
+  rename(symbol = gene_symbol)
+
+H3_class_df <- prom_peak_df %>%
+  group_by(symbol) %>%
+  summarise(
+    any_loss = any(is_loss, na.rm = TRUE),
+    any_gain = any(is_gain, na.rm = TRUE),
+    any_mark = any(has_H3K27me3_any, na.rm = TRUE),
+    .groups  = "drop"
+  ) %>%
+  mutate(
+    H3_class = case_when(
+      any_loss ~ "loss",
+      any_mark ~ "marked_no_change",
+      TRUE     ~ NA_character_
+    )
+  ) %>%
+  select(symbol, H3_class)
+
+## =========================
+## 4. Helpers: promoter-level MML & NME within CGIs
+## =========================
+compute_promoter_MML <- function(MML_gr, samp_name) {
+  ov <- findOverlaps(prom_cgi_gr, MML_gr, ignore.strand = TRUE)
+  
+  if (length(ov) == 0) {
+    return(
+      tibble(
+        prom_id  = prom_meta$prom_id,
+        symbol   = prom_meta$symbol,
+        sample   = samp_name,
+        n_tiles  = 0L,
+        MML_prom = NA_real_
+      )
+    )
+  }
+  
+  ov_df <- tibble(
+    prom_id = prom_cgi_gr$prom_id[queryHits(ov)],
+    MML     = mcols(MML_gr)$MML[subjectHits(ov)]
+  )
+  
+  summ <- ov_df %>%
+    group_by(prom_id) %>%
+    summarise(
+      n_tiles  = sum(!is.na(MML)),
+      MML_prom = ifelse(
+        n_tiles >= 5,
+        median(MML, na.rm = TRUE),
+        NA_real_
+      ),
+      .groups = "drop"
+    )
+  
+  prom_meta %>%
+    left_join(summ, by = "prom_id") %>%
+    mutate(
+      n_tiles  = ifelse(is.na(n_tiles), 0L, n_tiles),
+      MML_prom = ifelse(is.na(MML_prom), NA_real_, MML_prom),
+      sample   = samp_name
+    ) %>%
+    dplyr::select(prom_id, symbol, sample, n_tiles, MML_prom)
+}
+
+compute_promoter_NME <- function(NME_gr, samp_name) {
+  ov <- findOverlaps(prom_cgi_gr, NME_gr, ignore.strand = TRUE)
+  
+  if (length(ov) == 0) {
+    return(
+      tibble(
+        prom_id  = prom_meta$prom_id,
+        symbol   = prom_meta$symbol,
+        sample   = samp_name,
+        n_tiles  = 0L,
+        NME_prom = NA_real_
+      )
+    )
+  }
+  
+  ov_df <- tibble(
+    prom_id = prom_cgi_gr$prom_id[queryHits(ov)],
+    NME     = mcols(NME_gr)$NME[subjectHits(ov)]
+  )
+  
+  summ <- ov_df %>%
+    group_by(prom_id) %>%
+    summarise(
+      n_tiles  = sum(!is.na(NME)),
+      NME_prom = ifelse(
+        n_tiles >= 5,
+        median(NME, na.rm = TRUE),
+        NA_real_
+      ),
+      .groups = "drop"
+    )
+  
+  prom_meta %>%
+    left_join(summ, by = "prom_id") %>%
+    mutate(
+      n_tiles  = ifelse(is.na(n_tiles), 0L, n_tiles),
+      NME_prom = ifelse(is.na(NME_prom), NA_real_, NME_prom),
+      sample   = samp_name
+    ) %>%
+    dplyr::select(prom_id, symbol, sample, n_tiles, NME_prom)
+}
+
+## =========================
+## 5. MML pipeline
+## =========================
+prom_mml <- imap_dfr(MML_list, compute_promoter_MML) %>%
+  left_join(sample_info, by = "sample")
+
+prom_summary_MML <- prom_mml %>%
+  group_by(prom_id, symbol, group) %>%
+  summarise(
+    MML_group_mean = mean(MML_prom, na.rm = TRUE),
+    n_samples      = sum(!is.na(MML_prom)),
+    .groups        = "drop"
+  )
+
+prom_wide_MML <- prom_summary_MML %>%
+  dplyr::select(prom_id, symbol, group, MML_group_mean) %>%
+  pivot_wider(
+    names_from  = group,
+    values_from = MML_group_mean
+  ) %>%
+  filter(!is.na(Y),
+         !is.na(O),
+         !is.na(`O+OSKM`)) %>%
+  mutate(
+    delta_O_vs_Y     = O - Y,
+    delta_O_vs_OOSKM = O - `O+OSKM`
+  ) %>%
+  left_join(H3_class_df, by = "symbol") %>%
+  mutate(
+    H3_class = ifelse(is.na(H3_class), "unmarked", H3_class),
+    H3_class = factor(H3_class,
+                      levels = c("unmarked", "marked_no_change", "loss"))
+  ) %>%
+  filter(!is.na(H3_class))
+
+## =========================
+## 6. NME pipeline
+## =========================
+prom_nme <- imap_dfr(NME_list, compute_promoter_NME) %>%
+  left_join(sample_info, by = "sample")
+
+prom_summary_NME <- prom_nme %>%
+  group_by(prom_id, symbol, group) %>%
+  summarise(
+    NME_group_mean = mean(NME_prom, na.rm = TRUE),
+    n_samples      = sum(!is.na(NME_prom)),
+    .groups        = "drop"
+  )
+
+prom_wide_NME <- prom_summary_NME %>%
+  dplyr::select(prom_id, symbol, group, NME_group_mean) %>%
+  pivot_wider(
+    names_from  = group,
+    values_from = NME_group_mean
+  ) %>%
+  filter(!is.na(Y),
+         !is.na(O),
+         !is.na(`O+OSKM`)) %>%
+  mutate(
+    delta_O_vs_Y     = O - Y,
+    delta_O_vs_OOSKM = O - `O+OSKM`
+  ) %>%
+  left_join(H3_class_df, by = "symbol") %>%
+  mutate(
+    H3_class = ifelse(is.na(H3_class), "unmarked", H3_class),
+    H3_class = factor(H3_class,
+                      levels = c("unmarked", "marked_no_change", "loss"))
+  ) %>%
+  filter(!is.na(H3_class))
+
+## =========================
+## 7. Categorize up / down / no_change  + over-representation tests
+## =========================
+
+threshold_up   <- 0.05
+threshold_down <- -0.05   # for completeness; equals -threshold_up
+
+## ---- MML categories ----
+prom_wide_MML <- prom_wide_MML %>%
+  mutate(
+    # Old vs Young
+    cat_OY_MML = case_when(
+      delta_O_vs_Y > threshold_up    ~ "up",
+      delta_O_vs_Y < threshold_down  ~ "down",
+      TRUE                           ~ "no_change"
+    ),
+    # Old vs Old+OSKM
+    cat_OO_MML = case_when(
+      delta_O_vs_OOSKM > threshold_up   ~ "up",
+      delta_O_vs_OOSKM < threshold_down ~ "down",
+      TRUE                              ~ "no_change"
+    ),
+    # For over-representation (hyper = "up")
+    hyper_OY_MML      = cat_OY_MML == "up",
+    reversed_OSKM_MML = cat_OO_MML == "up"
+  )
+
+## ---- NME categories ----
+prom_wide_NME <- prom_wide_NME %>%
+  mutate(
+    cat_OY_NME = case_when(
+      delta_O_vs_Y > threshold_up    ~ "up",
+      delta_O_vs_Y < threshold_down  ~ "down",
+      TRUE                           ~ "no_change"
+    ),
+    cat_OO_NME = case_when(
+      delta_O_vs_OOSKM > threshold_up   ~ "up",
+      delta_O_vs_OOSKM < threshold_down ~ "down",
+      TRUE                              ~ "no_change"
+    ),
+    hyper_OY_NME      = cat_OY_NME == "up",
+    reversed_OSKM_NME = cat_OO_NME == "up"
+  )
+
+## ---- 2x2 tables for over-representation (same as before) ----
+tab_hyper_OY_MML <- table(prom_wide_MML$H3_class, prom_wide_MML$hyper_OY_MML)
+tab_reversed_MML <- table(prom_wide_MML$H3_class, prom_wide_MML$reversed_OSKM_MML)
+
+tab_hyper_OY_NME <- table(prom_wide_NME$H3_class, prom_wide_NME$hyper_OY_NME)
+tab_reversed_NME <- table(prom_wide_NME$H3_class, prom_wide_NME$reversed_OSKM_NME)
+
+get_pairwise_overrep <- function(tab, class_ref, class_comp,
+                                 metric, contrast_label) {
+  subtab <- tab[c(class_ref, class_comp), ]
+  ft     <- fisher.test(subtab)
+  data.frame(
+    metric     = metric,
+    contrast   = contrast_label,
+    comparison = paste0(class_comp, " vs ", class_ref),
+    OR         = unname(ft$estimate),
+    p_value    = ft$p.value,
+    stringsAsFactors = FALSE
+  )
+}
+
+overrep_results <- bind_rows(
+  # MML, aging hyper_OY
+  get_pairwise_overrep(tab_hyper_OY_MML, "unmarked",        "marked_no_change",
+                       "MML", "Old−Young hyper"),
+  get_pairwise_overrep(tab_hyper_OY_MML, "marked_no_change","loss",
+                       "MML", "Old−Young hyper"),
+  # MML, OSKM reversal
+  get_pairwise_overrep(tab_reversed_MML, "unmarked",        "marked_no_change",
+                       "MML", "OSKM reversal"),
+  get_pairwise_overrep(tab_reversed_MML, "marked_no_change","loss",
+                       "MML", "OSKM reversal"),
+  # NME, aging hyper_OY
+  get_pairwise_overrep(tab_hyper_OY_NME, "unmarked",        "marked_no_change",
+                       "NME", "Old−Young hyper"),
+  get_pairwise_overrep(tab_hyper_OY_NME, "marked_no_change","loss",
+                       "NME", "Old−Young hyper"),
+  # NME, OSKM reversal
+  get_pairwise_overrep(tab_reversed_NME, "unmarked",        "marked_no_change",
+                       "NME", "OSKM reversal"),
+  get_pairwise_overrep(tab_reversed_NME, "marked_no_change","loss",
+                       "NME", "OSKM reversal")
+) %>%
+  arrange(metric, contrast, comparison)
+
+overrep_results
+## This table has OR & p-value for marked_no_change vs unmarked
+## and loss vs marked_no_change, for MML & NME, in both contrasts.
+
+## =========================
+## 8. Stacked 4-panel figure: up / no_change / down
+## =========================
+
+## Order categories and choose colors for direction
+dir_levels <- c("down", "no_change", "up")
+dir_colors <- c(
+  down      = "#4C72B0",   # blue
+  no_change = "grey85",
+  up        = "#DD8452"    # orange/red
+)
+
+## --- MML: Old vs Young --- ##
+summary_MML_OY <- prom_wide_MML %>%
+  mutate(cat_OY_MML = factor(cat_OY_MML, levels = dir_levels)) %>%
+  group_by(H3_class, cat_OY_MML) %>%
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(H3_class) %>%
+  mutate(
+    n_total = sum(n),
+    prop    = 100 * n / n_total
+  ) %>%
+  ungroup()
+
+p_MML_OY <- ggplot(summary_MML_OY,
+                   aes(x = H3_class, y = prop,
+                       fill = cat_OY_MML)) +
+  geom_col() +
+  scale_fill_manual(values = dir_colors,
+                    name   = "Δ direction\n(Old − Young)") +
+  geom_text(
+    aes(label = sprintf("%.1f%%\n%d/%d", prop, n, n_total)),
+    position = position_stack(vjust = 0.5),
+    size     = 3
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.02))) +
+  theme_bw(base_size = 11) +
+  labs(
+    title = "MML, Old vs Young",
+    x     = "H3K27me3 status",
+    y     = "Promoters (%)"
+  )
+
+## --- MML: Old vs Old+OSKM --- ##
+summary_MML_OO <- prom_wide_MML %>%
+  mutate(cat_OO_MML = factor(cat_OO_MML, levels = dir_levels)) %>%
+  group_by(H3_class, cat_OO_MML) %>%
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(H3_class) %>%
+  mutate(
+    n_total = sum(n),
+    prop    = 100 * n / n_total
+  ) %>%
+  ungroup()
+
+p_MML_OO <- ggplot(summary_MML_OO,
+                   aes(x = H3_class, y = prop,
+                       fill = cat_OO_MML)) +
+  geom_col() +
+  scale_fill_manual(values = dir_colors,
+                    name   = "Δ direction\n(Old − Old+OSKM)") +
+  geom_text(
+    aes(label = sprintf("%.1f%%\n%d/%d", prop, n, n_total)),
+    position = position_stack(vjust = 0.5),
+    size     = 3
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.02))) +
+  theme_bw(base_size = 11) +
+  labs(
+    title = "MML, Old vs Old+OSKM",
+    x     = "H3K27me3 status",
+    y     = "Promoters (%)"
+  )
+
+## --- NME: Old vs Young --- ##
+summary_NME_OY <- prom_wide_NME %>%
+  mutate(cat_OY_NME = factor(cat_OY_NME, levels = dir_levels)) %>%
+  group_by(H3_class, cat_OY_NME) %>%
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(H3_class) %>%
+  mutate(
+    n_total = sum(n),
+    prop    = 100 * n / n_total
+  ) %>%
+  ungroup()
+
+p_NME_OY <- ggplot(summary_NME_OY,
+                   aes(x = H3_class, y = prop,
+                       fill = cat_OY_NME)) +
+  geom_col() +
+  scale_fill_manual(values = dir_colors,
+                    name   = "Δ direction\n(Old − Young)") +
+  geom_text(
+    aes(label = sprintf("%.1f%%\n%d/%d", prop, n, n_total)),
+    position = position_stack(vjust = 0.5),
+    size     = 3
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.02))) +
+  theme_bw(base_size = 11) +
+  labs(
+    title = "NME, Old vs Young",
+    x     = "H3K27me3 status",
+    y     = "Promoters (%)"
+  )
+
+## --- NME: Old vs Old+OSKM --- ##
+summary_NME_OO <- prom_wide_NME %>%
+  mutate(cat_OO_NME = factor(cat_OO_NME, levels = dir_levels)) %>%
+  group_by(H3_class, cat_OO_NME) %>%
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(H3_class) %>%
+  mutate(
+    n_total = sum(n),
+    prop    = 100 * n / n_total
+  ) %>%
+  ungroup()
+
+p_NME_OO <- ggplot(summary_NME_OO,
+                   aes(x = H3_class, y = prop,
+                       fill = cat_OO_NME)) +
+  geom_col() +
+  scale_fill_manual(values = dir_colors,
+                    name   = "Δ direction\n(Old − Old+OSKM)") +
+  geom_text(
+    aes(label = sprintf("%.1f%%\n%d/%d", prop, n, n_total)),
+    position = position_stack(vjust = 0.5),
+    size     = 3
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.02))) +
+  theme_bw(base_size = 11) +
+  labs(
+    title = "NME, Old vs Old+OSKM",
+    x     = "H3K27me3 status",
+    y     = "Promoters (%)"
+  )
+
+## --- Combine into 4-panel figure --- ##
+p_four_panel_stacked <- (p_MML_OY | p_MML_OO) /
+  (p_NME_OY | p_NME_OO) +
+  plot_annotation(tag_levels = "A")
+
+p_four_panel_stacked
