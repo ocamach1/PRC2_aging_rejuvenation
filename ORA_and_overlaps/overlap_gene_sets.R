@@ -1,5 +1,5 @@
 # Overlap of gene sets
-# Required packages:
+# Required R packages:
 # - TxDb.Mmusculus.UCSC.mm10.knownGene
 # - hypeR
 
