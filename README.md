@@ -12,7 +12,8 @@ It includes scripts to:
     
 - **Analyze ChIP-Seq data:**
   - Align and process ChIP-Seq data from raw fastq files.
-  - Perform peak calling with Sicer2.
+  - Perform peak calling with Sicer2 (for H3K27me3).
+  - Perform peak calling with EDD (for H3K9me2).
   - Perform differential binding analysis with DiffBind.
 
 - **Analyze RNA-Seq data:**
