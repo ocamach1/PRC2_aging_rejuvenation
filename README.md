@@ -21,4 +21,6 @@ It includes scripts to:
   - Perform differential expression analysis with DESeq2.
     
 - **Perform over-representation analysis (ORA)**
+
+- **Perform overlap analysis of gene sets and genomic regions**
 - **Plots**
