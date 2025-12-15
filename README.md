@@ -20,7 +20,6 @@ It includes scripts to:
   - Align and process RNA-Seq data from raw fastq files.
   - Perform differential expression analysis with DESeq2.
     
-- **Perform over-representation analysis (ORA)**
+- **Perform over-representation analysis (ORA) and overlaps**
 
-- **Perform overlap analysis of gene sets and genomic regions**
 - **Plots**
