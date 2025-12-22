@@ -1,0 +1,60 @@
+library(bsseq)
+library(limma)
+library(dmrseq)
+library("BiocParallel")
+library(GenomicRanges)
+
+
+bismark_files = c('Y-1_CpG_report.txt.gz',
+                  'Y-2_CpG_report.txt.gz',
+                  'Y-3_CpG_report.txt.gz',
+                  'Y-4_CpG_report.txt.gz',
+                  'Y-5_CpG_report.txt.gz',
+                  'O-1_CpG_report.txt.gz',
+                  'O-2_CpG_report.txt.gz',
+                  'O-3_CpG_report.txt.gz',
+                  'O-4_CpG_report.txt.gz',
+                  'O-5_CpG_report.txt.gz',')
+                  
+conditions = c('young','young','young', 'ctrl', 'ctrl', 'ctrl', 'ctrl','dox', 'dox', 'dox', 'dox', 'dox')
+file_names = DataFrame(row.names = c('Y4F-1', 'Y4F-3','Y4F-4','ctrl_5760', 'ctrl_5761', 'ctrl_5762', 'ctrl_5764','dox_253', 'dox_284', 'dox_285', 'dox_288', 'dox_904'), conditions)
+
+#Creating the Bsseq object. Reading the Bismark files
+BS.belmonte = read.bismark(files=bismark_files,
+                           loci = NULL,
+                           colData = file_names,
+                           rmZeroCov = FALSE,
+                           strandCollapse = TRUE,
+                           BPPARAM = MulticoreParam(workers = 8, progressbar = TRUE),
+                           replace = FALSE,
+                           chunkdim = NULL,
+                           level = NULL,
+                           verbose = getOption("verbose"))
+
+
+
+treatment <- c('O','O','O','O','O',
+                'Y','Y','Y','Y','Y')
+
+pData(bs_raw)$Treatment <- treatment
+grp.O <- sampleNames(bs_raw)[bs_raw$Treatment == "O"]
+grp.Y <- sampleNames(bs_raw)[bs_raw$Treatment == "Y"]
+
+keepIdx <- which(rowSums(getCoverage(bs_raw[,grp.O]) >= 2) >= 4
+                 & rowSums(getCoverage(bs_raw[,grp.Y]) >= 2) >= 4
+
+)
+# Remove unwanted CpGs
+bs_keep <- bs_raw[keepIdx,]  #19221184/21867837
+
+# Define covariate of new BS object
+pData(bs_keep)$Treatment <- as.factor(treatment) 
+
+# Subset the BS object with the groups involved!
+bs_comparison <- bs_keep[,which(treatment == "O" | treatment == "Y")]
+
+dmrseq_100perm <- dmrseq(bs=bs_comparison, testCovariate="Treatment", 
+                         cutoff = 0.1, minNumRegion = 5, smooth = TRUE, maxPerms = 100, BPPARAM = bpparam())
+
+results <- as.data.frame(dmrseq_100perm)
+write.csv(results, 'dmrseq_100perm_old-vs-young_regions_cutoff_0.1_oscar.csv', row.names=FALSE, quote=FALSE)
