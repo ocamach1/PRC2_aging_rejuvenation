@@ -50,8 +50,9 @@ samtools index ${samp_name}_coord_sorted.bam
 # Sorting the BAM file by read name
 samtools sort -n -o ${samp_name}_name_sorted.bam ${samp_name}_coord_sorted.bam
 
-# Generating BEDmethyl files (Bismark CpG reports) with methylated and unmethylated counts per CpG from BAM files. 
-# These CpG reports will be the input to construct the bsseq object in R for downstream analysis with dmrseq and detection of block DMRs:
+# Generating BEDmethyl files (Bismark CpG reports and coverage files) with methylated and unmethylated counts per CpG from BAM files. 
+# The Bismark CpG reports will be the input to construct the bsseq object in R for downstream analysis with dmrseq and detection of block DMRs.
+# The Bismark coverage files will be the input for the cell type deconvolution analysisis with the MeDeCom pipeline.
 bismark_methylation_extractor -p --report --bedGraph --gzip --comprehensive --merge_non_CpG --counts --cytosine_report --ignore 5 --ignore_r2 20 --genome_folder mm10_genome ${samp_name}_name_sorted.bam
 
 
