@@ -7,6 +7,7 @@ It includes scripts to:
   - Align and process WGBS data from raw fastq files.
   - Run informME pipeline: compute mean methylation level (MML), normalized entropy level (NME) for each WGBS sample, and Jensen-Shannon distance (JSD) between pairs of samples.
   - Rank epigenetically discordant genes when comparing samples (i.e. old vs young) based on JSD.
+  - Identification of block differentially methylated regions.
   - Perform cell type deconvolution with MeDeCom.
   - Perform Student's t-test and Wilcoxon test to compare distributions of MML and NME across groups.
     
